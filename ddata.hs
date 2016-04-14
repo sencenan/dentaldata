@@ -1,13 +1,14 @@
 import Control.Lens
-import Data.Maybe
 import Data.List
 import Data.List.Split
+import Data.Maybe
 import Data.String.Utils
 import Graphics.Rendering.Chart
-import Graphics.Rendering.Chart.Layout
 import Graphics.Rendering.Chart.Backend.Cairo
 --import Graphics.Rendering.Chart.Backend.Diagrams
 import Graphics.Rendering.Chart.Easy
+import Graphics.Rendering.Chart.Layout
+import System.Environment
 import Text.Read
 
 import qualified Data.Map as Map
@@ -21,7 +22,8 @@ import Text.CSV
 import Text.Parsec.Error
 
 main = do
-   csvData <- parseCSVFromFile "data/test-data.csv"
+   args <- getArgs
+   csvData <- parseCSVFromFile (head args)
    case csvData of
       Left err
          -> sequence_
@@ -35,8 +37,8 @@ main = do
 opt = def{_fo_size=(800, 9000)}
 
 process header contents =
-   (mapM_ renderCharts (chunksOf 10 comb))
-   >> (mapM_ processCorcoeff comb)
+   (mapM_ processCorcoeff comb)
+   >> (mapM_ renderCharts (chunksOf 10 comb))
    where
       comb = sortBy sortPairs [ x
          | x <- mapM (const (zip header cols)) [1..2]
