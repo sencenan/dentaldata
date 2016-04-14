@@ -1,4 +1,5 @@
 import Control.Lens
+import Control.Concurrent
 import Data.List
 import Data.List.Split
 import Data.Maybe
@@ -9,6 +10,7 @@ import Graphics.Rendering.Chart.Backend.Cairo
 import Graphics.Rendering.Chart.Easy
 import Graphics.Rendering.Chart.Layout
 import System.Environment
+import System.IO
 import Text.Read
 
 import qualified Data.Map as Map
@@ -37,8 +39,9 @@ main = do
 opt = def{_fo_size=(800, 9000)}
 
 process header contents =
-   (mapM_ processCorcoeff comb)
-   >> (mapM_ renderCharts (chunksOf 10 comb))
+   (mapM_ (forkIO . processCorcoeff) comb)
+   >> (hPutStrLn stderr "--")
+   >> (mapM_ (forkIO . (\x -> renderCharts x >> putStrLn ".")) (chunksOf 10 comb))
    where
       comb = sortBy sortPairs [ x
          | x <- mapM (const (zip header cols)) [1..2]
@@ -63,8 +66,14 @@ sortPairs a b = compare left right
       left = fst . head $ a
       right = fst . head $ b
 
-processCorcoeff ((hx, x):(hy, y):_) = putStrLn $
-   hx ++ "," ++ hy ++ "," ++ (show cvSpear) ++ "," ++ (show cv)
+processCorcoeff ((hx, x):(hy, y):_) = if (isNaN cv) && (isNaN cvSpear)
+   then return ()
+   else putStrLn $ "\""
+         ++ hx ++ "\",\""
+         ++ hy ++ "\",\""
+         ++ (show cvSpear)
+         ++ "\",\""
+         ++ (show cv) ++ "\""
       where
          cvSpear = S.spearman (V.fromList dx) (V.fromList dy)
          cv = S.corcoeff (V.fromList dx) (V.fromList dy)
