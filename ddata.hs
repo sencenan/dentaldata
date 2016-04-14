@@ -39,9 +39,13 @@ main = do
 opt = def{_fo_size=(800, 9000)}
 
 process header contents =
-   (mapM_ (forkIO . processCorcoeff) comb)
+   (mapM_ (processCorcoeff) comb)
    >> (hPutStrLn stderr "--")
-   >> (mapM_ (forkIO . (\x -> renderCharts x >> putStrLn ".")) (chunksOf 10 comb))
+   >> (
+      mapM_
+      (forkIO . (\x -> renderCharts x >> putStrLn "."))
+      (chunksOf 10 comb)
+   )
    where
       comb = sortBy sortPairs [ x
          | x <- mapM (const (zip header cols)) [1..2]
